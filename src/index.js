@@ -5,7 +5,7 @@ import { ChatClient } from "@twurple/chat";
 
 const required = ["TWITCH_CLIENT_ID", "TWITCH_ACCESS_TOKEN", "TWITCH_BOT_USER_ID", "TWITCH_CHANNEL"];
 for (const key of required) {
-  if (!process.env[key]) throw new Error(\`Missing required environment variable: \${key}\`);
+  if (!process.env[key]) throw new Error("Missing required environment variable: " + key);
 }
 
 const clientId = process.env.TWITCH_CLIENT_ID;
@@ -23,8 +23,9 @@ const shootCooldowns = new Map();
 const SHOOT_COOLDOWN_MS = 60_000;
 
 chat.onMessage(async (channelName, username, message, msg) => {
-  const [command, ...args] = message.trim().split(/\\s+/);
-  const cmd = command.toLowerCase();
+  const parts = message.trim().split(/\s+/);
+  const cmd = (parts.shift() || "").toLowerCase();
+  const args = parts;
 
   if (cmd === "!bucky") {
     await chat.say(channelName, "ARMED AND DANGEROUS");
@@ -35,20 +36,20 @@ chat.onMessage(async (channelName, username, message, msg) => {
     return;
   }
   if (cmd === "!lurk") {
-    await chat.say(channelName, \`@\${username} has entered the shadows. Happy lurking!\`);
+    await chat.say(channelName, "@" + username + " has entered the shadows. Happy lurking!");
     return;
   }
   if (cmd === "!unlurk") {
-    await chat.say(channelName, \`Welcome back, @\${username}!\`);
+    await chat.say(channelName, "Welcome back, @" + username + "!");
     return;
   }
   if (cmd === "!hug") {
     const recipient = cleanUsername(args[0]);
     if (!recipient) {
-      await chat.say(channelName, \`@\${username}, tell me who to hug: !hug <username>\`);
+      await chat.say(channelName, "@" + username + ", tell me who to hug: !hug <username>");
       return;
     }
-    await chat.say(channelName, \`@\${username} gives @\${recipient} a big hug!\`);
+    await chat.say(channelName, "@" + username + " gives @" + recipient + " a big hug!");
     return;
   }
   if (cmd === "!coinflip") {
@@ -57,7 +58,7 @@ chat.onMessage(async (channelName, username, message, msg) => {
   }
   if (cmd === "!8ball") {
     if (args.length === 0) {
-      await chat.say(channelName, \`@\${username}, ask a question after !8ball.\`);
+      await chat.say(channelName, "@" + username + ", ask a question after !8ball.");
       return;
     }
     const answers = ["Absolutely.", "Signs point to yes.", "Probably not.", "The future is unclear.", "Ask again later.", "Without a doubt.", "I wouldn't count on it.", "Very likely."];
@@ -68,7 +69,7 @@ chat.onMessage(async (channelName, username, message, msg) => {
 
   const recipient = cleanUsername(args[0]);
   if (!recipient) {
-    await chat.say(channelName, \`@\${username}, choose a target: !shoot <username>\`);
+    await chat.say(channelName, "@" + username + ", choose a target: !shoot <username>");
     return;
   }
 
@@ -78,13 +79,13 @@ chat.onMessage(async (channelName, username, message, msg) => {
     return;
   }
   const now = Date.now();
-  const lastUsed = shootCooldowns.get(executorId) ?? 0;
+  const lastUsed = shootCooldowns.get(executorId) || 0;
   if (now - lastUsed < SHOOT_COOLDOWN_MS) {
-    await chat.say(channelName, \`@\${username}, your blaster is cooling down.\`);
+    await chat.say(channelName, "@" + username + ", your blaster is cooling down.");
     return;
   }
   if (recipient.toLowerCase() === username.toLowerCase()) {
-    await chat.say(channelName, \`@\${username}, you cannot shoot yourself. Pick someone else!\`);
+    await chat.say(channelName, "@" + username + ", you cannot shoot yourself. Pick someone else!");
     return;
   }
 
@@ -95,7 +96,7 @@ chat.onMessage(async (channelName, username, message, msg) => {
     return;
   }
 
-  await chat.say(channelName, \`@\${username} just shot @\${recipient}, @\${recipient} is dead now.\`);
+  await chat.say(channelName, "@" + username + " just shot @" + recipient + ", @" + recipient + " is dead now.");
   try {
     // Only the person who ran !shoot is timed out. The named recipient is untouched.
     await api.moderation.banUser(broadcasterId, botUserId, executorId, {
@@ -105,7 +106,7 @@ chat.onMessage(async (channelName, username, message, msg) => {
     shootCooldowns.set(executorId, now);
   } catch (error) {
     console.error("Could not apply the !shoot timeout:", error);
-    await chat.say(channelName, \`@\${username}, the roleplay worked, but Twitch prison couldn't be applied. Check the bot's moderator permissions.\`);
+    await chat.say(channelName, "@" + username + ", the roleplay worked, but Twitch prison couldn't be applied. Check the bot's moderator permissions.");
   }
 });
 
@@ -114,6 +115,6 @@ function cleanUsername(value = "") {
   return /^[a-zA-Z0-9_]{1,25}$/.test(username) ? username : null;
 }
 
-chat.onConnect(() => console.log(\`Connected to Twitch chat: #\${channel}\`));
+chat.onConnect(() => console.log("Connected to Twitch chat: #" + channel));
 chat.onDisconnect((manually, reason) => console.log("Disconnected from Twitch chat.", { manually, reason }));
 await chat.connect();
